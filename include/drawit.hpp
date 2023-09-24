@@ -1,5 +1,5 @@
-#ifndef DRAWIT
-#define DRAWIT
+#ifndef DRAWITHPP
+#define DRAWITHPP
 
 #include <cstdint>
 #include <optional>
@@ -41,4 +41,4 @@ namespace drw {
     };
 }
 
-#endif /* DRAWIT */
+#endif /* DRAWITHPP */

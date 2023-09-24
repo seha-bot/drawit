@@ -5,7 +5,7 @@ DEBUG_DIR := $(BUILD_DIR)/debug
 RELEASE_DIR := $(BUILD_DIR)/release
 # CXX := x86_64-w64-mingw32-g++
 
-CXXFLAGS := -std=c++17 -Iinclude -MMD -Wall
+CXXFLAGS := -std=c++17 -Iinclude -MMD -Wall -DSANDSIMALT
 CXXFLAGS_DEBUG := -g
 CXXFLAGS_RELEASE := -DNDEBUG -O3
 LDLIBS := -lX11
