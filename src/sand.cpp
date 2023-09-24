@@ -1,4 +1,5 @@
 #include "sand.hpp"
+#include <stdexcept>
 
 void SandGrid::draw(drw::Window& window) const noexcept {
     for (uint32_t y = 0; y < height; y++) {
@@ -84,10 +85,11 @@ void SandGrid::updateSand() noexcept {
 #endif /* SANDSIMALT */
 
 void SandGrid::placeSolid(const Solid& solid) {
-    currentSolid = solid;
-    for (uint32_t y = 0; y < solid.mask->height(); y++) {
-        for (uint32_t x = 0; x < solid.mask->width(); x++) {
-            const uint32_t pixel = solid.mask->at(x, y);
+    currentSolid.emplace(solid);
+
+    for (uint32_t y = 0; y < solid.mask.height(); y++) {
+        for (uint32_t x = 0; x < solid.mask.width(); x++) {
+            const uint32_t pixel = solid.mask.at(x, y);
             if (pixel == 0) {
                 continue;
             }
@@ -106,65 +108,80 @@ void SandGrid::placeSolid(const Solid& solid) {
     }
 }
 
-void SandGrid::moveCurrentSolid(Direction direction) {
-    auto newX = currentSolid.x;
-    auto newY = currentSolid.y;
-
-    switch (direction) {
-        case Direction::left:
-            if (currentSolid.x != 0) {
-                newX--;
-            }
-        break;
-        case Direction::right:
-            if (currentSolid.x + currentSolid.mask->width() != width) {
-                newX++;
-            }
-        break;
-        case Direction::up:
-            if (currentSolid.y != 0) {
-                newY--;
-            }
-        break;
-        case Direction::down:
-            if (currentSolid.y + currentSolid.mask->height() != height) {
-                newY++;
-            }
-        break;
+void SandGrid::removeCurrentSolid() {
+    if (!currentSolid.has_value()) {
+        throw std::runtime_error("Trying to remove a solid when there are none");
     }
 
-    for (uint32_t y = 0; y < currentSolid.mask->height(); y++) {
-        for (uint32_t x = 0; x < currentSolid.mask->width(); x++) {
-            if (currentSolid.mask->at(x, y) == 0) {
+    for (uint32_t y = 0; y < currentSolid->mask.height(); y++) {
+        for (uint32_t x = 0; x < currentSolid->mask.width(); x++) {
+            if (currentSolid->mask.at(x, y) == 0) {
                 continue;
             }
 
-            auto& grain = at(currentSolid.x + x, currentSolid.y + y);
+            auto& grain = at(currentSolid->x + x, currentSolid->y + y);
             if (grain.state == GrainState::sand) {
-                throw std::runtime_error("Trying to draw over a non-empty grain");
+                throw std::runtime_error("VERY BAD! There is a sand grain at a solid position");
             }
 
             grain = Grain();
         }
     }
-
-    currentSolid.x = newX;
-    currentSolid.y = newY;
-    placeSolid(currentSolid);
 }
 
-bool SandGrid::doesCurrentSolidTouchSandOrBottom() const noexcept {
-    if (currentSolid.y + currentSolid.mask->height() == height) {
+void SandGrid::moveCurrentSolid(Direction direction) {
+    if (!currentSolid.has_value()) {
+        throw std::runtime_error("Trying to move a solid when there are none");
+    }
+
+    auto newX = currentSolid->x;
+    auto newY = currentSolid->y;
+
+    switch (direction) {
+        case Direction::left:
+            if (currentSolid->x != 0) {
+                newX--;
+            }
+        break;
+        case Direction::right:
+            if (currentSolid->x + currentSolid->mask.width() != width) {
+                newX++;
+            }
+        break;
+        case Direction::up:
+            if (currentSolid->y != 0) {
+                newY--;
+            }
+        break;
+        case Direction::down:
+            if (currentSolid->y + currentSolid->mask.height() != height) {
+                newY++;
+            }
+        break;
+    }
+
+    removeCurrentSolid();
+    currentSolid->x = newX;
+    currentSolid->y = newY;
+    placeSolid(currentSolid.value());
+}
+
+bool SandGrid::doesCurrentSolidTouchSandOrBottom() const {
+    if (!currentSolid.has_value()) {
+        throw std::runtime_error("Trying to check a solid when there are none");
+    }
+
+    if (currentSolid->y + currentSolid->mask.height() == height) {
         return true;
     }
 
-    for (uint32_t y = 0; y < currentSolid.mask->height(); y++) {
-        for (uint32_t x = 0; x < currentSolid.mask->width(); x++) {
-            if (currentSolid.mask->at(x, y) == 0) {
+    for (uint32_t y = 0; y < currentSolid->mask.height(); y++) {
+        for (uint32_t x = 0; x < currentSolid->mask.width(); x++) {
+            if (currentSolid->mask.at(x, y) == 0) {
                 continue;
             }
             // const_cast is safe here because data is never modified
-            const CellNeighbours others(const_cast<SandGrid&>(*this), currentSolid.x + x, currentSolid.y + y);
+            const CellNeighbours others(const_cast<SandGrid&>(*this), currentSolid->x + x, currentSolid->y + y);
 
             if ((others.left != nullptr && others.left->state == GrainState::sand)
                 || (others.right != nullptr && others.right->state == GrainState::sand)
@@ -177,13 +194,17 @@ bool SandGrid::doesCurrentSolidTouchSandOrBottom() const noexcept {
     return false;
 }
 
-void SandGrid::convertCurrentSolidToSand() noexcept {
-    for (uint32_t y = 0; y < currentSolid.mask->height(); y++) {
-        for (uint32_t x = 0; x < currentSolid.mask->width(); x++) {
-            if (currentSolid.mask->at(x, y) == 0) {
+void SandGrid::convertCurrentSolidToSand() {
+    if (!currentSolid.has_value()) {
+        throw std::runtime_error("Trying to convert a solid when there are none");
+    }
+
+    for (uint32_t y = 0; y < currentSolid->mask.height(); y++) {
+        for (uint32_t x = 0; x < currentSolid->mask.width(); x++) {
+            if (currentSolid->mask.at(x, y) == 0) {
                 continue;
             }
-            at(currentSolid.x + x, currentSolid.y + y).state = GrainState::sand;
+            at(currentSolid->x + x, currentSolid->y + y).state = GrainState::sand;
         }
     }
 }

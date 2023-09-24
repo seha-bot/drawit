@@ -25,7 +25,7 @@ public:
         return _height;
     }
 
-    uint32_t at(uint32_t x, uint32_t y) const {
+    uint8_t at(uint32_t x, uint32_t y) const {
         if (x >= _width || y >= _height) {
             throw std::runtime_error("Mask position out of bounds");
         }

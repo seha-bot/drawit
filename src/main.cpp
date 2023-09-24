@@ -1,26 +1,30 @@
+#include "config.hpp"
 #include "sand.hpp"
 #include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
 #include <unistd.h>
 
-void replaceCheck(SandGrid& grid, double& solidTick, const Mask& mask) {
+static Solid generateRandomSolid(uint32_t x, uint32_t y) {
+    return { cfg::masks[rand() % cfg::masks.size()], cfg::maskColors[rand() % cfg::maskColors.size()], x, y };
+}
+
+static void replaceCheck(SandGrid& grid, double& solidTick) {
     if (grid.doesCurrentSolidTouchSandOrBottom()) {
         grid.convertCurrentSolidToSand();
         solidTick = -1.0;
-        grid.placeSolid({ &mask, static_cast<uint32_t>(rand() & 0xFFFFFF), 0, 0 });
+        grid.placeSolid(generateRandomSolid(0, 0));
     }
 }
 
 int main() {
     std::srand(std::time(nullptr));
-    const int gridWidth = 80;
-    const int gridHeight = 180;
-    const int cellSize = 3;
 
-    drw::Window window(gridWidth * cellSize, gridHeight * cellSize);
-    SandGrid grid(gridWidth, gridHeight, cellSize);
+    drw::Window window(cfg::gridWidth * cfg::cellSize, cfg::gridHeight * cfg::cellSize);
+    SandGrid grid(cfg::gridWidth, cfg::gridHeight, cfg::cellSize);
 
-    const Mask mask("mask.pgm");
-    grid.placeSolid({ &mask, static_cast<uint32_t>(rand() & 0xFFFFFF), 0, 0 });
+    grid.placeSolid(generateRandomSolid(0, 0));
 
     const auto targetFPS = 1.0 / 60.0;
     auto lastTime = std::chrono::system_clock::now();
@@ -47,13 +51,13 @@ int main() {
                     return 0;
                 } else if (event->keycode == 113) {
                     grid.moveCurrentSolid(Direction::left);
-                    replaceCheck(grid, solidTick, mask);
+                    replaceCheck(grid, solidTick);
                 } else if (event->keycode == 114) {
                     grid.moveCurrentSolid(Direction::right);
-                    replaceCheck(grid, solidTick, mask);
+                    replaceCheck(grid, solidTick);
                 } else if (event->keycode == 116) {
                     grid.moveCurrentSolid(Direction::down);
-                    replaceCheck(grid, solidTick, mask);
+                    replaceCheck(grid, solidTick);
                 }
             }
         }
@@ -62,14 +66,14 @@ int main() {
         if (sandTick > 0.01) {
             sandTick -= 0.01;
             grid.updateSand();
-            replaceCheck(grid, solidTick, mask);
+            replaceCheck(grid, solidTick);
         }
 
         solidTick += deltaTime;
         if (solidTick > 0.03) {
             solidTick -= 0.03;
             grid.moveCurrentSolid(Direction::down);
-            replaceCheck(grid, solidTick, mask);
+            replaceCheck(grid, solidTick);
         }
 
         grid.draw(window);
