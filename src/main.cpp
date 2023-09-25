@@ -58,6 +58,8 @@ int main() {
                 } else if (event->keycode == 116) {
                     grid.moveCurrentSolid(Direction::down);
                     replaceCheck(grid, solidTick);
+                } else if (event->keycode == 65) {
+                    solidTick = sandTick = -10000;
                 }
             }
         }
@@ -67,6 +69,12 @@ int main() {
             sandTick -= 0.01;
             grid.updateSand();
             replaceCheck(grid, solidTick);
+
+            const auto y = grid.getAnyAreaHeight();
+            // std::cout << y.has_value() << std::endl;
+            if (y.has_value()) {
+                grid.removeAreaAtHeight(y.value());
+            }
         }
 
         solidTick += deltaTime;
