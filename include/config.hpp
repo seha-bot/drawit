@@ -24,8 +24,9 @@ namespace cfg {
     static const std::vector<Mask> masks({
         Mask("assets/mask1.pgm"),
         Mask("assets/mask2.pgm"),
-        // Mask("assets/mask3.pgm"),
-        // Mask("assets/mask4.pgm")
+        Mask("assets/mask3.pgm"),
+        Mask("assets/mask4.pgm"),
+        Mask("assets/mask5.pgm")
     });
 }
 
