@@ -1,5 +1,5 @@
 #include "drawit.hpp"
-#include <cstdint>
+#include <algorithm>
 #include <cstring>
 #include <stdexcept>
 
@@ -35,21 +35,61 @@ void drw::Window::clearFramebuffer() noexcept {
     std::memset(framebuffer, 0, sizeof(uint32_t) * width * height);
 }
 
-std::optional<drw::Event> drw::Window::nextEvent() const noexcept {
-    if (XPending(handle->display) == 0) {
-        return std::nullopt;
+static drw::Key mapKey(uint32_t key) {
+    if (key == 113) {
+        return drw::Key::left;
+    } else if (key == 114) {
+        return drw::Key::right;
+    } else if (key == 115) {
+        return drw::Key::up;
+    } else if (key == 116) {
+        return drw::Key::down;
+    } else if (key == 65) {
+        return drw::Key::space;
+    } else if (key == 66) {
+        return drw::Key::escape;
     }
-    XEvent event;
-    XNextEvent(handle->display, &event);
 
-    if (event.type == UnmapNotify) {
-        return drw::Event(EventType::windowUnmapped, 0);
-    } else {
-        return drw::Event(EventType::keyPress, event.xkey.keycode);
+    return drw::Key::none;
+}
+
+void drw::Window::pollEvents() noexcept {
+    auto eventCount = XPending(handle->display);
+
+    Key key;
+    XEvent event;
+    while (eventCount != 0) {
+        XNextEvent(handle->display, &event);
+        eventCount--;
+
+        if (event.type == UnmapNotify) {
+            _isClosed = true;
+        } else if (event.type == KeyRelease) {
+            key = mapKey(event.xkey.keycode);
+            if (key != drw::Key::none) {
+                const auto it = std::find(downKeys.begin(), downKeys.end(), key);
+                if (it != downKeys.end()) {
+                    downKeys.erase(it);
+                }
+            }
+        } else {
+            key = mapKey(event.xkey.keycode);
+            if (key != drw::Key::none) {
+                downKeys.push_back(key);
+            }
+        }
     }
 }
 
-drw::Window::Window(uint32_t width, uint32_t height) : handle(nullptr), width(width), height(height) {
+bool drw::Window::isKeyDown(Key key) const noexcept {
+    return std::find(downKeys.begin(), downKeys.end(), key) != downKeys.end();
+}
+
+bool drw::Window::isClosed() const noexcept {
+    return _isClosed;
+}
+
+drw::Window::Window(uint32_t width, uint32_t height) : handle(nullptr), _isClosed(false), width(width), height(height) {
     handle = new WindowHandle;
 
     handle->display = XOpenDisplay(nullptr);
@@ -73,7 +113,7 @@ drw::Window::Window(uint32_t width, uint32_t height) : handle(nullptr), width(wi
         throw std::runtime_error("Can't create framebuffer");
     }
 
-    XSelectInput(handle->display, handle->window, StructureNotifyMask | KeyPressMask);
+    XSelectInput(handle->display, handle->window, StructureNotifyMask | KeyPressMask | KeyReleaseMask);
 }
 
 drw::Window::~Window() {

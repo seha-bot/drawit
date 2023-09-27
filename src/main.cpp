@@ -1,9 +1,7 @@
 #include "config.hpp"
+#include "drawit.hpp"
 #include "sand.hpp"
 #include <chrono>
-#include <cstddef>
-#include <cstdint>
-#include <cstdlib>
 #include <unistd.h>
 
 static Solid generateRandomSolid(uint32_t x, uint32_t y) {
@@ -32,7 +30,7 @@ int main() {
     double sandTick = 0.0;
     double solidTick = 0.0;
 
-    while (true) {
+    while (!window.isClosed() && !window.isKeyDown(drw::Key::escape)) {
         const auto now = std::chrono::system_clock::now();
         const auto subDeltaTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastTime).count() * 0.001;
         if (subDeltaTime < targetFPS) {
@@ -41,27 +39,21 @@ int main() {
         lastTime = std::chrono::system_clock::now();
         const auto deltaTime = std::max(subDeltaTime, targetFPS);
 
-        std::optional<drw::Event> event;
-        while ((event = window.nextEvent())) {
-            // TODO make proper key press events
-            if (event->type == drw::EventType::windowUnmapped) {
-                return 0;
-            } else if (event->type == drw::EventType::keyPress) {
-                if (event->keycode == 66 || event->keycode == 24) {
-                    return 0;
-                } else if (event->keycode == 113) {
-                    grid.moveCurrentSolid(Direction::left);
-                    replaceCheck(grid, solidTick);
-                } else if (event->keycode == 114) {
-                    grid.moveCurrentSolid(Direction::right);
-                    replaceCheck(grid, solidTick);
-                } else if (event->keycode == 116) {
-                    grid.moveCurrentSolid(Direction::down);
-                    replaceCheck(grid, solidTick);
-                } else if (event->keycode == 65) {
-                    solidTick = sandTick = -10000;
-                }
-            }
+        window.pollEvents();
+        if (window.isKeyDown(drw::Key::left)) {
+            grid.moveCurrentSolid(Direction::left);
+            replaceCheck(grid, solidTick);
+        }
+        if (window.isKeyDown(drw::Key::right)) {
+            grid.moveCurrentSolid(Direction::right);
+            replaceCheck(grid, solidTick);
+        }
+        if (window.isKeyDown(drw::Key::down)) {
+            grid.moveCurrentSolid(Direction::down);
+            replaceCheck(grid, solidTick);
+        }
+        if (window.isKeyDown(drw::Key::space)) {
+            solidTick = sandTick = -10000;
         }
 
         sandTick += deltaTime;
@@ -71,7 +63,6 @@ int main() {
             replaceCheck(grid, solidTick);
 
             const auto y = grid.getAnyAreaHeight();
-            // std::cout << y.has_value() << std::endl;
             if (y.has_value()) {
                 grid.removeAreaAtHeight(y.value());
             }
