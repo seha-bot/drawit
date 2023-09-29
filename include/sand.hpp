@@ -30,12 +30,12 @@ struct Grain {
 };
 
 struct Solid {
-    const Mask& mask;
+    Mask& mask;
     uint32_t color;
     uint32_t x;
     uint32_t y;
 
-    Solid(const Mask& mask, uint32_t color, uint32_t x, uint32_t y) : mask(mask), color(color), x(x), y(y) {}
+    Solid(Mask& mask, uint32_t color, uint32_t x, uint32_t y) : mask(mask), color(color), x(x), y(y) {}
 };
 
 enum Direction { left, right, up, down };
@@ -55,6 +55,7 @@ public:
     void placeSolid(const Solid& solid);
     void removeCurrentSolid();
     void moveCurrentSolid(Direction direction);
+    void rotateCurrentSolid();
 
     bool doesCurrentSolidTouchSandOrBottom() const;
     void convertCurrentSolidToSand();

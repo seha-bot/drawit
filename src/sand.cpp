@@ -167,6 +167,12 @@ void SandGrid::moveCurrentSolid(Direction direction) {
     placeSolid(currentSolid.value());
 }
 
+void SandGrid::rotateCurrentSolid() {
+    removeCurrentSolid();
+    currentSolid->mask.rotate();
+    placeSolid(currentSolid.value());
+}
+
 bool SandGrid::doesCurrentSolidTouchSandOrBottom() const {
     if (!currentSolid.has_value()) {
         throw std::runtime_error("Trying to check a solid when there are none");
@@ -211,6 +217,7 @@ void SandGrid::convertCurrentSolidToSand() {
 }
 
 bool SandGrid::doesAreaHitRightBorder(uint32_t color, uint32_t x, uint32_t y, std::set<std::pair<uint32_t, uint32_t>>& checked) const noexcept {
+    // fastAt?
     try {
         const auto& cell = at(x, y);
         if (checked.insert({x, y}).second == false || cell.state != GrainState::sand || cell.color != color) {
@@ -224,7 +231,10 @@ bool SandGrid::doesAreaHitRightBorder(uint32_t color, uint32_t x, uint32_t y, st
         || doesAreaHitRightBorder(color, x + 1, y, checked)
         || doesAreaHitRightBorder(color, x, y + 1, checked)
         || doesAreaHitRightBorder(color, x, y - 1, checked)
-        || doesAreaHitRightBorder(color, x - 1, y, checked);
+        || doesAreaHitRightBorder(color, x - 1, y - 1, checked)
+        || doesAreaHitRightBorder(color, x + 1, y - 1, checked)
+        || doesAreaHitRightBorder(color, x - 1, y + 1, checked)
+        || doesAreaHitRightBorder(color, x + 1, y + 1, checked);
 }
 
 std::optional<uint32_t> SandGrid::getAnyAreaHeight() const noexcept {
@@ -261,10 +271,11 @@ void SandGrid::removeArea(uint32_t color, uint32_t x, uint32_t y) noexcept {
 
     removeArea(color, x + 1, y);
     removeArea(color, x, y + 1);
-
-    // TODO prove that these 2 are needed.
-    removeArea(color, x - 1, y);
     removeArea(color, x, y - 1);
+    removeArea(color, x - 1, y - 1);
+    removeArea(color, x + 1, y - 1);
+    removeArea(color, x - 1, y + 1);
+    removeArea(color, x + 1, y + 1);
 }
 
 void SandGrid::removeAreaAtHeight(uint32_t y) {

@@ -55,6 +55,9 @@ int main() {
         if (window.isKeyDown(drw::Key::space)) {
             solidTick = sandTick = -10000;
         }
+        if (window.isKeyDownOnce(drw::Key::up)) {
+            grid.rotateCurrentSolid();
+        }
 
         sandTick += deltaTime;
         if (sandTick > 0.01) {

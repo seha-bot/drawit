@@ -40,7 +40,7 @@ static drw::Key mapKey(uint32_t key) {
         return drw::Key::left;
     } else if (key == 114) {
         return drw::Key::right;
-    } else if (key == 115) {
+    } else if (key == 111) {
         return drw::Key::up;
     } else if (key == 116) {
         return drw::Key::down;
@@ -57,7 +57,7 @@ void drw::Window::pollEvents() noexcept {
     auto eventCount = XPending(handle->display);
 
     Key key;
-    XEvent event;
+    XEvent event, peekEvent;
     while (eventCount != 0) {
         XNextEvent(handle->display, &event);
         eventCount--;
@@ -65,6 +65,15 @@ void drw::Window::pollEvents() noexcept {
         if (event.type == UnmapNotify) {
             _isClosed = true;
         } else if (event.type == KeyRelease) {
+            if (eventCount != 0) {
+                XPeekEvent(handle->display, &peekEvent);
+                if (peekEvent.type == KeyPress && event.xkey.time == peekEvent.xkey.time && event.xkey.keycode == peekEvent.xkey.keycode) {
+                    XNextEvent(handle->display, &peekEvent);
+                    eventCount--;
+                    continue;
+                }
+            }
+
             key = mapKey(event.xkey.keycode);
             if (key != drw::Key::none) {
                 const auto it = std::find(downKeys.begin(), downKeys.end(), key);
@@ -83,6 +92,15 @@ void drw::Window::pollEvents() noexcept {
 
 bool drw::Window::isKeyDown(Key key) const noexcept {
     return std::find(downKeys.begin(), downKeys.end(), key) != downKeys.end();
+}
+
+bool drw::Window::isKeyDownOnce(Key key) noexcept {
+    const auto it = std::find(downKeys.begin(), downKeys.end(), key);
+    if (it != downKeys.end()) {
+        downKeys.erase(it);
+        return true;
+    }
+    return false;
 }
 
 bool drw::Window::isClosed() const noexcept {

@@ -21,7 +21,7 @@ namespace cfg {
         0x00FFFF
     });
 
-    static const std::vector<Mask> masks({
+    static std::vector<Mask> masks({
         Mask("assets/mask1.pgm"),
         Mask("assets/mask2.pgm"),
         Mask("assets/mask3.pgm"),

@@ -13,6 +13,7 @@ A tetris game without integrity.
 - [ ] drawit support for Windows
 - [ ] support for audio
 - [ ] more assets
+- [x] ~~diagonal connections for clearing sand~~
 
 ---
 

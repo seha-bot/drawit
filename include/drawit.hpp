@@ -32,6 +32,7 @@ namespace drw {
 
         void pollEvents() noexcept;
         bool isKeyDown(Key key) const noexcept;
+        bool isKeyDownOnce(Key key) noexcept;
 
         bool isClosed() const noexcept;
 
