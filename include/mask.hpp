@@ -1,14 +1,8 @@
 #ifndef MASKHPP
 #define MASKHPP
 
-// TODO clean these includes
-#include <algorithm>
 #include <cstdint>
 #include <fstream>
-#include <iostream>
-#include <iterator>
-#include <sstream>
-#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -33,19 +27,21 @@ public:
         return mask[x + y * _width];
     }
 
-    void rotate() noexcept {
-        // TODO unimplemented
-        return;
+    void ror() noexcept {
+        const auto maskRot(mask);
+        for (uint32_t y = 0; y < _height; y++) {
+            for (uint32_t x = 0; x < _width; x++) {
+                mask[y + (_width - x - 1) * _height] = maskRot[x + y * _width];
+            }
+        }
+        std::swap(_width, _height);
+    }
 
-        auto maskRot(mask);
-
-        for (size_t y = 0; y < _height / 2; y++) {
-            for (size_t x = 0; x < _width / 2; x++) {
-                // mask.at(x + y * _width) = maskRot.at(y + x * _height);
-                size_t id = x + y * _width;
-                size_t otherX = id / _width;
-                size_t otherY = id % _width;
-                mask.at(id) = maskRot.at(otherX + otherY * _height);
+    void rol() noexcept {
+        const auto maskRot(mask);
+        for (uint32_t y = 0; y < _height; y++) {
+            for (uint32_t x = 0; x < _width; x++) {
+                mask[(_height - y - 1) + x * _height] = maskRot[x + y * _width];
             }
         }
         std::swap(_width, _height);

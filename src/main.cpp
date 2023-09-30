@@ -8,6 +8,7 @@ static Solid generateRandomSolid(uint32_t x, uint32_t y) {
     return { cfg::masks[rand() % cfg::masks.size()], cfg::maskColors[rand() % cfg::maskColors.size()], x, y };
 }
 
+// TODO this name is unclear
 static void replaceCheck(SandGrid& grid, double& solidTick) {
     if (grid.doesCurrentSolidTouchSandOrBottom()) {
         grid.convertCurrentSolidToSand();

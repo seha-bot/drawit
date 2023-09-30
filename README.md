@@ -4,8 +4,7 @@ A tetris game without integrity.
 
 ## TODO list
 
-- [ ] SOLID Rotation
-- [ ] Less random colors
+- [x] ~~SOLID Rotation~~
 - [x] ~~Input event system~~
 - [ ] UI for upcoming SOLID & grid wrapper
 - [ ] README.md for compiling & documentation

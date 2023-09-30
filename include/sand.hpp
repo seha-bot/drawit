@@ -30,12 +30,12 @@ struct Grain {
 };
 
 struct Solid {
-    Mask& mask;
+    Mask mask;
     uint32_t color;
     uint32_t x;
     uint32_t y;
 
-    Solid(Mask& mask, uint32_t color, uint32_t x, uint32_t y) : mask(mask), color(color), x(x), y(y) {}
+    Solid(const Mask& mask, uint32_t color, uint32_t x, uint32_t y) : mask(mask), color(color), x(x), y(y) {}
 };
 
 enum Direction { left, right, up, down };

@@ -101,6 +101,7 @@ void SandGrid::placeSolid(const Solid& solid) {
 
             auto& grain = at(solid.x + x, solid.y + y);
             if (grain.state != GrainState::empty) {
+                removeCurrentSolid();
                 throw std::runtime_error("Trying to draw over a non-empty grain");
             }
 
@@ -119,15 +120,10 @@ void SandGrid::removeCurrentSolid() {
             if (currentSolid->mask.at(x, y) == 0) {
                 continue;
             }
-
-            auto& grain = at(currentSolid->x + x, currentSolid->y + y);
-            if (grain.state == GrainState::sand) {
-                throw std::runtime_error("VERY BAD! There is a sand grain at a solid position");
-            }
-
-            grain = Grain();
+            at(currentSolid->x + x, currentSolid->y + y) = Grain();
         }
     }
+    currentSolid.reset();
 }
 
 void SandGrid::moveCurrentSolid(Direction direction) {
@@ -161,16 +157,47 @@ void SandGrid::moveCurrentSolid(Direction direction) {
         break;
     }
 
+    auto solid = currentSolid.value();
     removeCurrentSolid();
-    currentSolid->x = newX;
-    currentSolid->y = newY;
-    placeSolid(currentSolid.value());
+    solid.x = newX;
+    solid.y = newY;
+    placeSolid(solid);
+}
+
+static bool doesSolidFit(const SandGrid& grid, const Solid& solid) noexcept {
+    for (uint32_t y = 0; y < solid.mask.height(); y++) {
+        for (uint32_t x = 0; x < solid.mask.width(); x++) {
+            const uint8_t pixel = solid.mask.at(x, y);
+            if (pixel == 0) {
+                continue;
+            }
+
+            // again, fastAt can solve this..
+            try {
+                if (grid.at(solid.x + x, solid.y + y).state == GrainState::sand) {
+                    return false;
+                }
+            } catch (std::runtime_error& e) {
+                return false;
+            }
+        }
+    }
+
+    return true;
 }
 
 void SandGrid::rotateCurrentSolid() {
-    removeCurrentSolid();
-    currentSolid->mask.rotate();
-    placeSolid(currentSolid.value());
+    if (!currentSolid.has_value()) {
+        throw std::runtime_error("Trying to check a solid when there are none");
+    }
+
+    auto solid = currentSolid.value();
+    solid.mask.ror();
+
+    if (doesSolidFit(*this, solid)) {
+        removeCurrentSolid();
+        placeSolid(solid);
+    }
 }
 
 bool SandGrid::doesCurrentSolidTouchSandOrBottom() const {
@@ -216,6 +243,8 @@ void SandGrid::convertCurrentSolidToSand() {
     }
 }
 
+// Effective C++ item 23.
+// Apply it here and everywhere else where I have messed up.
 bool SandGrid::doesAreaHitRightBorder(uint32_t color, uint32_t x, uint32_t y, std::set<std::pair<uint32_t, uint32_t>>& checked) const noexcept {
     // fastAt?
     try {
