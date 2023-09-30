@@ -84,7 +84,10 @@ void drw::Window::pollEvents() noexcept {
         } else {
             key = mapKey(event.xkey.keycode);
             if (key != drw::Key::none) {
-                downKeys.push_back(key);
+                const auto it = std::find(downKeys.begin(), downKeys.end(), key);
+                if (it == downKeys.end()) {
+                    downKeys.push_back(key);
+                }
             }
         }
     }
