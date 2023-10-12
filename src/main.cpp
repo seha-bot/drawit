@@ -4,12 +4,12 @@
 #include <chrono>
 #include <unistd.h>
 
-static Solid generateRandomSolid(uint32_t x, uint32_t y) {
+static sand::Solid generateRandomSolid(uint32_t x, uint32_t y) {
     return { cfg::masks[rand() % cfg::masks.size()], cfg::maskColors[rand() % cfg::maskColors.size()], x, y };
 }
 
 // TODO this name is unclear
-static void replaceCheck(SandGrid& grid, double& solidTick) {
+static void replaceCheck(sand::SandGrid& grid, double& solidTick) {
     if (grid.doesCurrentSolidTouchSandOrBottom()) {
         grid.convertCurrentSolidToSand();
         solidTick = -1.0;
@@ -21,7 +21,7 @@ int main() {
     std::srand(std::time(nullptr));
 
     drw::Window window(cfg::gridWidth * cfg::cellSize, cfg::gridHeight * cfg::cellSize);
-    SandGrid grid(cfg::gridWidth, cfg::gridHeight, cfg::cellSize);
+    sand::SandGrid grid(cfg::gridWidth, cfg::gridHeight, cfg::cellSize);
 
     grid.placeSolid(generateRandomSolid(0, 0));
 
@@ -42,15 +42,15 @@ int main() {
 
         window.pollEvents();
         if (window.isKeyDown(drw::Key::left)) {
-            grid.moveCurrentSolid(Direction::left);
+            grid.moveCurrentSolid(sand::Direction::left);
             replaceCheck(grid, solidTick);
         }
         if (window.isKeyDown(drw::Key::right)) {
-            grid.moveCurrentSolid(Direction::right);
+            grid.moveCurrentSolid(sand::Direction::right);
             replaceCheck(grid, solidTick);
         }
         if (window.isKeyDown(drw::Key::down)) {
-            grid.moveCurrentSolid(Direction::down);
+            grid.moveCurrentSolid(sand::Direction::down);
             replaceCheck(grid, solidTick);
         }
         if (window.isKeyDown(drw::Key::space)) {
@@ -66,16 +66,16 @@ int main() {
             grid.updateSand();
             replaceCheck(grid, solidTick);
 
-            const auto y = grid.getAnyAreaHeight();
-            if (y.has_value()) {
-                grid.removeAreaAtHeight(y.value());
+            const auto id = sand::getAnyAreaId(grid);
+            if (id.has_value()) {
+                sand::removeArea(grid, id.value());
             }
         }
 
         solidTick += deltaTime;
         if (solidTick > 0.03) {
             solidTick -= 0.03;
-            grid.moveCurrentSolid(Direction::down);
+            grid.moveCurrentSolid(sand::Direction::down);
             replaceCheck(grid, solidTick);
         }
 

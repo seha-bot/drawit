@@ -1,7 +1,7 @@
 #include "sand.hpp"
 #include <stdexcept>
 
-void SandGrid::draw(drw::Window& window) const noexcept {
+void sand::SandGrid::draw(drw::Window& window) const noexcept {
     for (uint32_t y = 0; y < height; y++) {
         for (uint32_t x = 0; x < width; x++) {
             const auto& cell = at(x, y);
@@ -16,8 +16,7 @@ void SandGrid::draw(drw::Window& window) const noexcept {
     }
 }
 
-#ifdef SANDSIMALT
-void SandGrid::updateSand() noexcept {
+void sand::SandGrid::updateSand() noexcept {
     for (uint32_t y = height - 1; y != static_cast<uint32_t>(-1); y--) {
         for (uint32_t x = 0; x < width; x++) {
             auto& cell = at(x, y);
@@ -49,47 +48,8 @@ void SandGrid::updateSand() noexcept {
         }
     }
 }
-#else
-void SandGrid::updateSand() noexcept {
-    for (uint32_t y = height - 1; y != static_cast<uint32_t>(-1); y--) {
-        for (uint32_t x = 0; x < width; x++) {
-            auto& cell = at(x, y);
-            if (cell.state != GrainState::sand) {
-                continue;
-            }
 
-            CellNeighbours others(*this, x, y);
-            if (others.bottom == nullptr) {
-                continue;
-            }
-
-            const bool goDown = std::rand() & 1;
-
-            if (others.bottom->state == GrainState::empty) {
-                *others.bottom = cell;
-                cell.state = GrainState::empty;
-            } else if (others.left != nullptr && others.left->state == GrainState::empty && others.bottomLeft->state == GrainState::empty) {
-                if (goDown) {
-                    *others.bottomLeft = cell;
-                } else {
-                    *others.left = cell;
-                }
-                cell.state = GrainState::empty;
-            } else if (others.right != nullptr && others.right->state == GrainState::empty && others.bottomRight->state == GrainState::empty) {
-                if (goDown) {
-                    *others.bottomRight = cell;
-                } else {
-                    *others.right = cell;
-                }
-                cell.state = GrainState::empty;
-                x++;
-            }
-        }
-    }
-}
-#endif /* SANDSIMALT */
-
-void SandGrid::placeSolid(const Solid& solid) {
+void sand::SandGrid::placeSolid(const Solid& solid) {
     currentSolid.emplace(solid);
 
     for (uint32_t y = 0; y < solid.mask.height(); y++) {
@@ -110,7 +70,7 @@ void SandGrid::placeSolid(const Solid& solid) {
     }
 }
 
-void SandGrid::removeCurrentSolid() {
+void sand::SandGrid::removeCurrentSolid() {
     if (!currentSolid.has_value()) {
         throw std::runtime_error("Trying to remove a solid when there are none");
     }
@@ -126,7 +86,7 @@ void SandGrid::removeCurrentSolid() {
     currentSolid.reset();
 }
 
-void SandGrid::moveCurrentSolid(Direction direction) {
+void sand::SandGrid::moveCurrentSolid(Direction direction) {
     if (!currentSolid.has_value()) {
         throw std::runtime_error("Trying to move a solid when there are none");
     }
@@ -164,7 +124,7 @@ void SandGrid::moveCurrentSolid(Direction direction) {
     placeSolid(solid);
 }
 
-static bool doesSolidFit(const SandGrid& grid, const Solid& solid) noexcept {
+static bool doesSolidFit(const sand::SandGrid& grid, const sand::Solid& solid) noexcept {
     for (uint32_t y = 0; y < solid.mask.height(); y++) {
         for (uint32_t x = 0; x < solid.mask.width(); x++) {
             const uint8_t pixel = solid.mask.at(x, y);
@@ -172,12 +132,11 @@ static bool doesSolidFit(const SandGrid& grid, const Solid& solid) noexcept {
                 continue;
             }
 
-            // again, fastAt can solve this..
-            try {
-                if (grid.at(solid.x + x, solid.y + y).state == GrainState::sand) {
-                    return false;
-                }
-            } catch (std::runtime_error& e) {
+            if (solid.x + x >= grid.width || solid.y + y >= grid.height) {
+                return false;
+            }
+
+            if (grid.at(solid.x + x, solid.y + y).state == sand::GrainState::sand) {
                 return false;
             }
         }
@@ -186,7 +145,7 @@ static bool doesSolidFit(const SandGrid& grid, const Solid& solid) noexcept {
     return true;
 }
 
-void SandGrid::rotateCurrentSolid() {
+void sand::SandGrid::rotateCurrentSolid() {
     if (!currentSolid.has_value()) {
         throw std::runtime_error("Trying to check a solid when there are none");
     }
@@ -200,7 +159,7 @@ void SandGrid::rotateCurrentSolid() {
     }
 }
 
-bool SandGrid::doesCurrentSolidTouchSandOrBottom() const {
+bool sand::SandGrid::doesCurrentSolidTouchSandOrBottom() const {
     if (!currentSolid.has_value()) {
         throw std::runtime_error("Trying to check a solid when there are none");
     }
@@ -228,7 +187,7 @@ bool SandGrid::doesCurrentSolidTouchSandOrBottom() const {
     return false;
 }
 
-void SandGrid::convertCurrentSolidToSand() {
+void sand::SandGrid::convertCurrentSolidToSand() {
     if (!currentSolid.has_value()) {
         throw std::runtime_error("Trying to convert a solid when there are none");
     }
@@ -243,40 +202,37 @@ void SandGrid::convertCurrentSolidToSand() {
     }
 }
 
-// Effective C++ item 23.
-// Apply it here and everywhere else where I have messed up.
-bool SandGrid::doesAreaHitRightBorder(uint32_t color, uint32_t x, uint32_t y, std::set<std::pair<uint32_t, uint32_t>>& checked) const noexcept {
-    // fastAt?
-    try {
-        const auto& cell = at(x, y);
-        if (checked.insert({x, y}).second == false || cell.state != GrainState::sand || cell.color != color) {
-            return false;
-        }
-    } catch (std::runtime_error& e) {
+static bool doesAreaHitRightBorder(const sand::SandGrid& grid, uint32_t color, uint32_t x, uint32_t y, std::set<std::pair<uint32_t, uint32_t>>& checked) noexcept {
+    if (x >= grid.width || y >= grid.height) {
         return false;
     }
 
-    return x == width - 1
-        || doesAreaHitRightBorder(color, x + 1, y, checked)
-        || doesAreaHitRightBorder(color, x, y + 1, checked)
-        || doesAreaHitRightBorder(color, x, y - 1, checked)
-        || doesAreaHitRightBorder(color, x - 1, y - 1, checked)
-        || doesAreaHitRightBorder(color, x + 1, y - 1, checked)
-        || doesAreaHitRightBorder(color, x - 1, y + 1, checked)
-        || doesAreaHitRightBorder(color, x + 1, y + 1, checked);
+    const auto& cell = grid.at(x, y);
+    if (checked.insert({x, y}).second == false || cell.state != sand::GrainState::sand || cell.color != color) {
+        return false;
+    }
+
+    return x == grid.width - 1
+        || doesAreaHitRightBorder(grid, color, x + 1, y, checked)
+        || doesAreaHitRightBorder(grid, color, x, y + 1, checked)
+        || doesAreaHitRightBorder(grid, color, x, y - 1, checked)
+        || doesAreaHitRightBorder(grid, color, x - 1, y - 1, checked)
+        || doesAreaHitRightBorder(grid, color, x + 1, y - 1, checked)
+        || doesAreaHitRightBorder(grid, color, x - 1, y + 1, checked)
+        || doesAreaHitRightBorder(grid, color, x + 1, y + 1, checked);
 }
 
-std::optional<uint32_t> SandGrid::getAnyAreaHeight() const noexcept {
+std::optional<uint32_t> sand::getAnyAreaId(const SandGrid& grid) noexcept {
     std::optional<uint32_t> currentColor;
 
-    for (uint32_t y = 0; y < height; y++) {
-        const auto& cell = at(0, y);
+    for (uint32_t y = 0; y < grid.height; y++) {
+        const auto& cell = grid.at(0, y);
         if (cell.state != GrainState::sand || currentColor == cell.color) {
             continue;
         }
 
         std::set<std::pair<uint32_t, uint32_t>> checked;
-        if (doesAreaHitRightBorder(cell.color, 0, y, checked)) {
+        if (doesAreaHitRightBorder(grid, cell.color, 0, y, checked)) {
             return y;
         }
 
@@ -286,32 +242,31 @@ std::optional<uint32_t> SandGrid::getAnyAreaHeight() const noexcept {
     return std::nullopt;
 }
 
-void SandGrid::removeArea(uint32_t color, uint32_t x, uint32_t y) noexcept {
-    // Can be replaced with try catch, or make "fastAt" for grids
-    if (x >= width || y >= height) {
+static void removeAreaRecursive(sand::SandGrid& grid, uint32_t color, uint32_t x, uint32_t y) noexcept {
+    if (x >= grid.width || y >= grid.height) {
         return;
     }
 
-    auto& cell = at(x, y);
-    if (cell.state == GrainState::empty || cell.color != color) {
+    auto& cell = grid.at(x, y);
+    if (cell.state == sand::GrainState::empty || cell.color != color) {
         return;
     }
-    cell.state = GrainState::empty;
+    cell.state = sand::GrainState::empty;
 
-    removeArea(color, x + 1, y);
-    removeArea(color, x, y + 1);
-    removeArea(color, x, y - 1);
-    removeArea(color, x - 1, y - 1);
-    removeArea(color, x + 1, y - 1);
-    removeArea(color, x - 1, y + 1);
-    removeArea(color, x + 1, y + 1);
+    removeAreaRecursive(grid, color, x + 1, y);
+    removeAreaRecursive(grid, color, x, y + 1);
+    removeAreaRecursive(grid, color, x, y - 1);
+    removeAreaRecursive(grid, color, x - 1, y - 1);
+    removeAreaRecursive(grid, color, x + 1, y - 1);
+    removeAreaRecursive(grid, color, x - 1, y + 1);
+    removeAreaRecursive(grid, color, x + 1, y + 1);
 }
 
-void SandGrid::removeAreaAtHeight(uint32_t y) {
-    const auto& cell = at(0, y);
+void sand::removeArea(SandGrid& grid, uint32_t id) {
+    const auto& cell = grid.at(0, id);
     if (cell.state != GrainState::sand) {
         throw std::runtime_error("Trying to remove a non-sand area");
     }
 
-    removeArea(cell.color, 0, y);
+    removeAreaRecursive(grid, cell.color, 0, id);
 }
