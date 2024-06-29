@@ -2,19 +2,22 @@
 
 A tetris game without integrity.
 
+## Current requirements:
+
+- SDL2
+- SDL2_ttf
+- SDL2_image
+
 ## TODO list
 
-- [x] ~~SOLID Rotation~~
-- [x] ~~Input event system~~
-- [ ] UI for upcoming SOLID & grid wrapper
-- [ ] README.md for compiling & documentation
-- [ ] Rename the repo to TETRISAND
-- [ ] drawit support for Windows
-- [ ] support for audio
-- [ ] more assets
-- [x] ~~diagonal connections for clearing sand~~
+- CMAKE build for debug & release
+- CMAKE tests
 
----
-
-- [x] ~~Finished~~
-- [ ] Unfinished
+- UI for intro
+- UI for upcoming blocks
+- UI for score
+- visual effects
+- make the game harder by slowing down sand tick
+- a real README.md
+- audio
+- CI/CD for windows builds
